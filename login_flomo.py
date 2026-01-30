@@ -1,4 +1,5 @@
 from playwright.sync_api import sync_playwright
+from playwright_stealth import Stealth
 from dotenv import load_dotenv
 import os
 import sys
@@ -21,7 +22,7 @@ print(f"用户名: {user}")
 print(f"下载路径: {download_path}")
 print(f"Headless 模式: {headless}")
 
-with sync_playwright() as p:
+with Stealth().use_sync(sync_playwright()) as p:
     browser = p.chromium.launch(headless=headless)
     context = browser.new_context(accept_downloads=True)
     page = context.new_page()
@@ -34,7 +35,7 @@ with sync_playwright() as p:
     print("页面已加载，正在查找登录表单...")
 
     # 输入手机号
-    phone_input = page.locator('input[type="tel"], input[placeholder*="手机"], input[name*="phone"], input[name*="mobile"]').first
+    phone_input = page.locator('input[placeholder="手机号 / 邮箱"], input[type="tel"], input[placeholder*="手机"]').first
     phone_input.fill(user)
     print("已输入手机号")
 

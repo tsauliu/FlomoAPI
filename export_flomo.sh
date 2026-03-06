@@ -5,7 +5,7 @@
 
 SCRIPT_DIR="/home/leo/FlomoAPI"
 LOG_FILE="$SCRIPT_DIR/export.log"
-VENV_PATH="/home/leo/pyenv"
+export PATH="$HOME/.local/bin:$PATH"
 
 # 记录日志
 log() {
@@ -20,11 +20,8 @@ cd "$SCRIPT_DIR" || {
     exit 1
 }
 
-# 激活虚拟环境并运行脚本
-source "$VENV_PATH/bin/activate"
-
-# 使用 headless 模式运行
-HEADLESS=1 python3 login_flomo.py >> "$LOG_FILE" 2>&1
+# 使用 uv run 运行（自动使用项目 .venv）
+HEADLESS=1 uv run login_flomo.py >> "$LOG_FILE" 2>&1
 
 EXIT_CODE=$?
 
@@ -33,8 +30,6 @@ if [ $EXIT_CODE -eq 0 ]; then
 else
     log "导出失败，退出码: $EXIT_CODE"
 fi
-
-deactivate
 
 log "任务结束"
 echo "" >> "$LOG_FILE"

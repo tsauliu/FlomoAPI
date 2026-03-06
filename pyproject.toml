@@ -1,0 +1,10 @@
+[project]
+name = "flomoapi"
+version = "0.1.0"
+description = "Flomo data export automation via Playwright"
+requires-python = ">=3.12"
+dependencies = [
+    "playwright",
+    "playwright-stealth",
+    "python-dotenv",
+]

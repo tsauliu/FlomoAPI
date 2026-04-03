@@ -72,42 +72,65 @@ with Stealth().use_sync(sync_playwright()) as p:
     # 数据导出流程
     print("\n开始数据导出流程...")
 
-    steps = [
-        ("svg.filter-icon", "筛选图标"),
-        ("input[placeholder='结束日期']", "结束日期输入框"),
-        ("button:has-text('最近一个月')", "最近一个月按钮"),
-        ("span:has-text('搜索')", "搜索按钮"),
-        ("button:has-text('导出')", "导出按钮"),
-    ]
-
-    for i, (selector, desc) in enumerate(steps, 1):
-        try:
-            page.wait_for_timeout(2000)
-            element = page.locator(selector).first
-            element.wait_for(state="visible", timeout=10000)
-            element.click()
-            print(f"步骤 {i}: 已点击 {desc}")
-        except Exception as e:
-            print(f"步骤 {i}: 点击 {desc} 失败 - {e}")
-
-    # 步骤6: 点击确定按钮并处理下载
+    # 步骤1: 点击搜索框打开筛选 popover
     try:
+        search_input = page.locator(".search-input .el-input__inner").first
+        search_input.click()
+        page.wait_for_timeout(1000)
+        print("步骤 1: 已打开搜索筛选面板")
+    except Exception as e:
+        print(f"步骤 1: 打开筛选面板失败 - {e}")
+
+    # 步骤2: 点击 "近 30 天" chip (通过 JS dispatch，因为在 popover 内)
+    try:
+        page.evaluate("""
+            const chip = Array.from(document.querySelectorAll('.search-popover .chip'))
+                .find(c => c.textContent.trim() === '近 30 天');
+            if (chip) chip.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+        """)
+        page.wait_for_timeout(1000)
+        print("步骤 2: 已选择 近 30 天")
+    except Exception as e:
+        print(f"步骤 2: 选择日期范围失败 - {e}")
+
+    # 步骤3: 点击搜索按钮
+    try:
+        page.evaluate("""
+            const btn = Array.from(document.querySelectorAll('.search-popover span'))
+                .find(s => s.textContent.trim() === '搜索' && s.children.length === 0);
+            if (btn) btn.dispatchEvent(new MouseEvent('click', {bubbles: true, cancelable: true}));
+        """)
+        page.wait_for_timeout(3000)
+        print("步骤 3: 已点击搜索")
+    except Exception as e:
+        print(f"步骤 3: 点击搜索失败 - {e}")
+
+    # 步骤4: 点击导出按钮
+    try:
+        export_btn = page.locator("button:has-text('导出')").first
+        export_btn.wait_for(state="visible", timeout=10000)
+        export_btn.click()
         page.wait_for_timeout(2000)
-        confirm_btn = page.locator("button:has-text('确定')").first
+        print("步骤 4: 已点击导出")
+    except Exception as e:
+        print(f"步骤 4: 点击导出失败 - {e}")
+
+    # 步骤5: 点击确定按钮并处理下载
+    try:
+        confirm_btn = page.locator(".el-message-box__btns .el-button--primary").first
         confirm_btn.wait_for(state="visible", timeout=10000)
 
         # 等待下载
-        with page.expect_download() as download_info:
+        with page.expect_download(timeout=60000) as download_info:
             confirm_btn.click()
-            print("步骤 6: 已点击 确定按钮")
+            print("步骤 5: 已点击确定，等待下载...")
 
         download = download_info.value
-        # 保存到指定路径，使用原文件名（同一天会覆盖）
         save_path = os.path.join(download_path, download.suggested_filename)
         download.save_as(save_path)
         print(f"文件已保存到: {save_path}")
     except Exception as e:
-        print(f"步骤 6: 下载失败 - {e}")
+        print(f"步骤 5: 下载失败 - {e}")
 
     print("\n数据导出流程完成！")
 
